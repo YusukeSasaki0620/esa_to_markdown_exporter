@@ -2,29 +2,48 @@
 require "esa"
 require 'dotenv/load'
 require 'csv'
-require 'rubygems'
-# require 'active_support'
 
 client = Esa::Client.new(access_token: ENV['ACCESS_TOKEN'], current_team: ENV['CURRENT_TEAM'])
 
 next_page = 1
 is_first = true
 ESA_DIR = "esaDir/"
+BR = "\r\n"
 SPRITER = "\r\n\r\n---------\r\n\r\n"
 FileUtils.mkdir_p('archives')
 while next_page
-  response = client.posts(page: next_page)
+  response = client.posts(per: 100, page: next_page)
   posts = response.body['posts']
   next_page = response.body['next_page']
 
   posts.each do |post|
-    pp post["number"]
-    pp post["category"]
-    pp post["full_name"]
-    FileUtils.mkdir_p(ESA_DIR + (post["category"]||""))
-    File.open(ESA_DIR + post["full_name"] + ".md" , mode = "w", encoding: 'UTF-8'){|f|
-      f << post["body_md"]
-      f << SPRITER
+    post_number = post["number"]
+    post_category = post["category"] || ""
+    post_full_name =  post["full_name"]
+    pp post["comments_count"]
+    FileUtils.mkdir_p(ESA_DIR + post_category)
+    File.open(ESA_DIR + post_full_name + ".md" , mode = "w", encoding: 'UTF-8'){ |f|
+      additional_info = []
+      additional_info << post["body_md"]
+      additional_info << SPRITER
+      additional_info << "その他元記事情報付加"
+      additional_info << "- url: [ " + post["url"] + " ]"
+      additional_info << "created_by: "
+      additional_info << "- tags" unless post["tags"].empty?
+      post["tags"].each { |tag| additional_info << "  - " + tag }
+
+      unless post["comments_count"].zero?
+        comments_body = client.comments(post_number, per: 100).body
+        additional_info << "- comments_start: " + comments_body["total_count"].to_s
+        additional_info << SPRITER
+        comments_body['comments'].each do |comment|
+          additional_info << comment['body_md']
+          additional_info << SPRITER
+        end
+        additional_info << '- comments_end:'
+      end
+
+      f << additional_info.join(BR)
     }
 
     if is_first
