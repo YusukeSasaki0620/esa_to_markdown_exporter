@@ -4,6 +4,7 @@ require 'dotenv/load'
 
 client = Esa::Client.new(access_token: ENV['ACCESS_TOKEN'], current_team: ENV['CURRENT_TEAM'])
 
+binding.irb
 # Authenticated User API
 pp client.user
 #=> GET /v1/user
