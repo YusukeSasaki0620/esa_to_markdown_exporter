@@ -2,26 +2,38 @@
 require "esa"
 require 'dotenv/load'
 require 'csv'
+require 'rubygems'
+# require 'active_support'
 
 client = Esa::Client.new(access_token: ENV['ACCESS_TOKEN'], current_team: ENV['CURRENT_TEAM'])
 
 next_page = 1
 is_first = true
-
+ESA_DIR = "esaDir/"
+SPRITER = "\r\n\r\n---------\r\n\r\n"
+FileUtils.mkdir_p('archives')
 while next_page
-  response = client.posts(per_page: 100, page: next_page)
+  response = client.posts(page: next_page)
   posts = response.body['posts']
   next_page = response.body['next_page']
 
   posts.each do |post|
     pp post["number"]
+    pp post["category"]
+    pp post["full_name"]
+    FileUtils.mkdir_p(ESA_DIR + (post["category"]||""))
+    File.open(ESA_DIR + post["full_name"] + ".md" , mode = "w", encoding: 'UTF-8'){|f|
+      f << post["body_md"]
+      f << SPRITER
+    }
+
     if is_first
       is_first = false
-      CSV.open('esa_posts.csv', 'w', encoding: 'UTF-8') do |result_csv|
+      CSV.open('archives/esa_posts.csv', 'w', encoding: 'UTF-8') do |result_csv|
         result_csv << post.keys
       end
     end
-    CSV.open('esa_posts.csv', 'a', encoding: 'UTF-8') do |result_csv|
+    CSV.open('archives/esa_posts.csv', 'a', encoding: 'UTF-8') do |result_csv|
       result_csv << post.values
     end
   end
