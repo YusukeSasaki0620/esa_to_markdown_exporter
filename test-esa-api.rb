@@ -1,13 +1,34 @@
 # Initialization
 require "esa"
 require 'dotenv/load'
+require 'csv'
 
 client = Esa::Client.new(access_token: ENV['ACCESS_TOKEN'], current_team: ENV['CURRENT_TEAM'])
 
-binding.irb
-# Authenticated User API
-pp client.user
-#=> GET /v1/user
+next_page = 1
+is_first = true
+
+while next_page
+  response = client.posts(per_page: 100, page: next_page)
+  posts = response.body['posts']
+  next_page = response.body['next_page']
+
+  posts.each do |post|
+    pp post["number"]
+    if is_first
+      is_first = false
+      CSV.open('esa_posts.csv', 'w', encoding: 'UTF-8') do |result_csv|
+        result_csv << post.keys
+      end
+    end
+    CSV.open('esa_posts.csv', 'a', encoding: 'UTF-8') do |result_csv|
+      result_csv << post.values
+    end
+  end
+end
+# # Authenticated User API
+# pp client.user
+# #=> GET /v1/user
 
 # # Team API
 # client.teams
