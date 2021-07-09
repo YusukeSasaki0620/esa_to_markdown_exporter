@@ -18,17 +18,18 @@ while next_page
 
   posts.each do |post|
     post_number = post["number"]
-    post_category = post["category"] || ""
-    post_full_name =  post["full_name"]
-    pp post["comments_count"]
+    post_category = post["category"].to_s + "/"
+    post_name =  post["name"]
+    file_name = ESA_DIR + post_category + post_name + '.md'
+    pp file_name
     FileUtils.mkdir_p(ESA_DIR + post_category)
-    File.open(ESA_DIR + post_full_name + ".md" , mode = "w", encoding: 'UTF-8'){ |f|
+    File.open(file_name , mode = "w", encoding: 'UTF-8'){ |f|
       additional_info = []
       additional_info << post["body_md"]
       additional_info << SPRITER
       additional_info << "その他元記事情報付加"
       additional_info << "- url: [ " + post["url"] + " ]"
-      additional_info << "created_by: "
+      additional_info << "- created_by: [ " + post["created_by"]["name"] + " ]"
       additional_info << "- tags" unless post["tags"].empty?
       post["tags"].each { |tag| additional_info << "  - " + tag }
 
@@ -36,7 +37,10 @@ while next_page
         comments_body = client.comments(post_number, per: 100).body
         additional_info << "- comments_start: " + comments_body["total_count"].to_s
         additional_info << SPRITER
-        comments_body['comments'].each do |comment|
+        comments_body['comments'].each_with_index do |comment, i|
+          additional_info << 'comment_no: ' + i.to_s
+          additional_info << 'comment_by: [ ' + comment["created_by"]["name"] + ' ]'
+          additional_info << SPRITER
           additional_info << comment['body_md']
           additional_info << SPRITER
         end
