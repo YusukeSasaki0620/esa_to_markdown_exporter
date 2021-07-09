@@ -45,6 +45,7 @@ while next_page
           additional_info << SPRITER
         end
         additional_info << '- comments_end:'
+        sleep 1 # limit対策
       end
 
       f << additional_info.join(BR)
